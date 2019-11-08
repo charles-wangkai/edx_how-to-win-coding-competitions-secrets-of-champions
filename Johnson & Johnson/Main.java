@@ -1,8 +1,12 @@
+// https://en.wikipedia.org/wiki/Johnson%27s_rule
+
 import java.io.File;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Scanner;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class Main {
 	public static void main(String[] args) throws Throwable {
@@ -30,34 +34,30 @@ public class Main {
 	static String solve(int[] A, int[] B) {
 		int n = A.length;
 
+		Element[] elements = IntStream.range(0, n).boxed()
+				.flatMap(i -> Stream.of(new Element(i, A[i], true), new Element(i, B[i], false)))
+				.sorted((e1, e2) -> Integer.compare(e1.time, e2.time)).toArray(Element[]::new);
+
 		Bicycle[] bicycles = new Bicycle[n];
-		for (int i = 0; i < bicycles.length; i++) {
-			bicycles[i] = new Bicycle(i, A[i], B[i]);
-		}
-
-		Arrays.sort(bicycles, (bicycle1, bicycle2) -> {
-			int sign1 = Integer.signum(bicycle1.A - bicycle1.B);
-			int sign2 = Integer.signum(bicycle2.A - bicycle2.B);
-			if (sign1 != sign2) {
-				return Integer.compare(sign1, sign2);
+		int leftIndex = 0;
+		int rightIndex = bicycles.length - 1;
+		boolean[] used = new boolean[n];
+		for (Element element : elements) {
+			if (used[element.index]) {
+				continue;
 			}
+			used[element.index] = true;
 
-			if (sign1 < 0) {
-				if (bicycle1.A != bicycle2.A) {
-					return Integer.compare(bicycle1.A, bicycle2.A);
-				} else {
-					return -Integer.compare(bicycle1.B, bicycle2.B);
-				}
-			} else if (sign1 > 0) {
-				if (bicycle1.B != bicycle2.B) {
-					return -Integer.compare(bicycle1.B, bicycle2.B);
-				} else {
-					return Integer.compare(bicycle1.A, bicycle2.A);
-				}
+			Bicycle bicyle = new Bicycle(element.index, A[element.index], B[element.index]);
+
+			if (element.AOrB) {
+				bicycles[leftIndex] = bicyle;
+				leftIndex++;
 			} else {
-				return 0;
+				bicycles[rightIndex] = bicyle;
+				rightIndex--;
 			}
-		});
+		}
 
 		long[] startAs = new long[n];
 		long[] startBs = new long[n];
@@ -75,6 +75,18 @@ public class Main {
 		return String.format("%d\n%s\n%s", timeB,
 				Arrays.stream(startAs).mapToObj(String::valueOf).collect(Collectors.joining(" ")),
 				Arrays.stream(startBs).mapToObj(String::valueOf).collect(Collectors.joining(" ")));
+	}
+}
+
+class Element {
+	int index;
+	int time;
+	boolean AOrB;
+
+	Element(int index, int time, boolean AOrB) {
+		this.index = index;
+		this.time = time;
+		this.AOrB = AOrB;
 	}
 }
 
